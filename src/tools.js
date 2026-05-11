@@ -11,42 +11,26 @@
 // here too, with the same shape — `{ name, description, input_schema }` — and
 // agent.js would need to execute it locally when Claude asks for it.
 
-// web_search: lets the agent issue search queries. We allow it to use this for
-// a few rounds so it can refine queries ("seeking alpha rare earth" →
-// "seekingalpha.com MP Materials May 2026").
+// web_search: lets the agent issue search queries. We deliberately *don't*
+// pass `allowed_domains` — that field is a strict allowlist, and Anthropic
+// rejects the whole request if any listed domain blocks their crawler in
+// robots.txt (Reuters / Bloomberg / MarketWatch all do). Instead we steer the
+// agent toward Seeking Alpha via PROMPTS.txt and let it fall back to whichever
+// crawler-friendly outlets it finds organically.
 export const webSearchTool = {
   type: "web_search_20250305",
   name: "web_search",
   max_uses: 5,
-  // Scope the agent to financial-news-ish domains. Seeking Alpha is the
-  // primary target; the others give it fallback context if SA blocks the
-  // crawler.
-  allowed_domains: [
-    "seekingalpha.com",
-    "finance.yahoo.com",
-    "reuters.com",
-    "bloomberg.com",
-    "marketwatch.com",
-    "fool.com",
-  ],
 };
 
-// web_fetch: lets the agent open a specific URL and read its contents. The
-// agent will normally pick URLs out of the search results above. We cap fetches
-// so a runaway agent can't burn the whole budget on one query.
+// web_fetch: lets the agent open a specific URL and read its contents. Same
+// reasoning as above — no allowlist, since the model already biases toward
+// Seeking Alpha and any blocked URL it tries just fails that one fetch
+// instead of failing the whole request.
 export const webFetchTool = {
   type: "web_fetch_20250910",
   name: "web_fetch",
   max_uses: 8,
-  // Match the search scope so the agent can't be redirected somewhere weird.
-  allowed_domains: [
-    "seekingalpha.com",
-    "finance.yahoo.com",
-    "reuters.com",
-    "bloomberg.com",
-    "marketwatch.com",
-    "fool.com",
-  ],
   // Pull a generous slice of each article — Seeking Alpha pieces can be long.
   max_content_tokens: 20000,
 };
