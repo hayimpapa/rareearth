@@ -1,6 +1,12 @@
 // server.js — tiny Express wrapper exposing the agent as POST /analyze.
 
-import "dotenv/config";
+import dotenv from "dotenv";
+// Load .env.local first (it's what CLAUDE.md and the example file document),
+// then fall back to .env. `override: false` on the second call means .env.local
+// wins if both define the same key.
+dotenv.config({ path: ".env.local" });
+dotenv.config();
+
 import express from "express";
 import { runAgent } from "./agent.js";
 

@@ -1,6 +1,8 @@
 // test/test-agent.js — manual smoke test. Assumes `npm start` is running.
 
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+dotenv.config();
 
 const URL = `http://localhost:${process.env.PORT || 3000}/analyze`;
 const QUERY =
