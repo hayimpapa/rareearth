@@ -60,7 +60,11 @@ export async function runAgent(userQuery) {
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     console.log(`[agent] turn ${turn + 1}: calling model`);
 
-    const response = await getClient().messages.create({
+    // We hit `client.beta.messages.create` (not `client.messages.create`)
+    // because `web_fetch_20250910` is a beta tool — the `betas` field is only
+    // accepted on the beta namespace. `web_search` works either way; once
+    // web_fetch graduates we can switch back to the GA endpoint.
+    const response = await getClient().beta.messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
       system: SYSTEM_PROMPT,
