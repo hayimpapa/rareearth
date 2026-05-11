@@ -11,38 +11,42 @@ const QUERY =
 
 const pad = (s, n) => (s + " ".repeat(n)).slice(0, n);
 
+// Extract the markdown analysis, skipping intermediate agent thinking.
+function cleanAnalysis(text) {
+  const m = text.match(/#\s*Rare Earth/i);
+  return m ? text.slice(m.index) : text;
+}
+
 function printResult(r) {
-  console.log("\n=== ANALYSIS ===\n");
-  console.log(r.analysis || "(empty)");
-
-  console.log("\n=== COMPANIES ===\n");
-  if (!r.companies?.length) {
-    console.log("(none detected by heuristics)");
-  } else {
-    console.log(pad("Name", 28), pad("Tkr", 6), pad("Sentiment", 10), pad("Valuation", 14), "Themes");
-    console.log("-".repeat(90));
+  // Top: companies table (most actionable).
+  if (r.companies?.length) {
+    console.log("\n┌─ COMPANIES ──────────────────────────────────────────────────────────────┐");
+    console.log(`│ ${pad("Name", 24)} ${pad("Tkr", 6)} ${pad("Sentiment", 10)} ${pad("Valuation", 12)}│`);
+    console.log("├" + "─".repeat(75) + "┤");
     for (const c of r.companies) {
-      console.log(
-        pad(c.name, 28),
-        pad(c.ticker || "", 6),
-        pad(c.sentiment, 10),
-        pad(c.valuation, 14),
-        (c.themes || []).join(", "),
-      );
+      const themes = c.themes?.length ? ` [${c.themes.slice(0, 2).join(", ")}]` : "";
+      const row =
+        `│ ${pad(c.name, 24)} ${pad(c.ticker || "—", 6)} ${pad(c.sentiment, 10)} ${pad(c.valuation, 12)}${themes}`.padEnd(75) + "│";
+      console.log(row);
     }
+    console.log("└" + "─".repeat(75) + "┘");
   }
 
-  console.log("\n=== SOURCES ===\n");
-  if (!r.sources?.length) {
-    console.log("(none)");
-  } else {
-    for (const s of r.sources) {
-      console.log(`- ${s.title}`);
-      console.log(`  ${s.url}${s.date ? `  (${s.date})` : ""}`);
+  // Middle: agent's final analysis (stripped of "searching..." noise).
+  console.log("\n" + cleanAnalysis(r.analysis || "").trim());
+
+  // Bottom: compact source list.
+  if (r.sources?.length) {
+    const recent = r.sources.slice(0, 8);
+    console.log("\n📚 Sources:");
+    for (const s of recent) {
+      const date = s.date ? ` (${s.date.split("T")[0]})` : "";
+      console.log(`  • ${s.title}${date}`);
     }
+    if (r.sources.length > 8) console.log(`  ... +${r.sources.length - 8} more`);
   }
 
-  console.log(`\n(timestamp: ${r.timestamp})`);
+  console.log(`\n⏱ Generated ${r.timestamp}`);
 }
 
 async function main() {
