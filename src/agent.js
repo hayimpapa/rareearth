@@ -34,7 +34,14 @@ const MODEL = "claude-opus-4-7";
 const MAX_TOKENS = 4096;
 const MAX_TURNS = 6; // safety cap on the loop
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Construct lazily: ESM hoists `import` above any dotenv.config() call in the
+// entry point, so reading process.env at module load happens *before* .env.local
+// has been parsed. Building the client on first use sidesteps that ordering.
+let _client;
+function getClient() {
+  if (!_client) _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return _client;
+}
 
 /**
  * Run the agent against a single user query.
@@ -53,7 +60,7 @@ export async function runAgent(userQuery) {
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     console.log(`[agent] turn ${turn + 1}: calling model`);
 
-    const response = await client.messages.create({
+    const response = await getClient().messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
       system: SYSTEM_PROMPT,
