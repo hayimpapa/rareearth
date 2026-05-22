@@ -1,10 +1,16 @@
 // test/test-agent.js — manual smoke test. Assumes `npm start` is running.
 
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "..", ".env.local") });
 dotenv.config();
 
-const URL = `http://localhost:${process.env.PORT || 3000}/analyze`;
+const HOST = process.env.HOST || "127.0.0.1";
+const URL = `http://${HOST}:${process.env.PORT || 3000}/analyze`;
+const TOKEN = process.env.ANALYZE_TOKEN;
 const QUERY =
   process.argv.slice(2).join(" ").trim() ||
   "What is the sentiment around rare earth mining companies on Seeking Alpha?";
@@ -50,11 +56,18 @@ function printResult(r) {
 }
 
 async function main() {
+  if (!TOKEN) {
+    console.error("ANALYZE_TOKEN is not set in .env.local — /analyze will reject the request.");
+    process.exit(1);
+  }
   console.log(`POST ${URL}\nquery: ${QUERY}\n`);
 
   const res = await fetch(URL, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": TOKEN,
+    },
     body: JSON.stringify({ query: QUERY }),
   });
 
